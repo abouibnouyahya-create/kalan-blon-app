@@ -1,328 +1,201 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { createClient } from "@/lib/supabase/client";
 
-export default function NouveauCours() {
+type Fiche = {
+  id: number;
+  created_at: string;
+  discipline: string | null;
+};
+
+export default function Accueil() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [classe, setClasse] = useState("10eme");
-  const [serie, setSerie] = useState("commune");
-  const [discipline, setDiscipline] = useState("Mathematiques");
-  const [theme, setTheme] = useState("");
-  const [duree, setDuree] = useState("55");
-  const [resultat, setResultat] = useState("");
-  const [chargement, setChargement] = useState(false);
+  const [prenom, setPrenom] = useState<string>("");
+  const [etablissement, setEtablissement] = useState<string>("");
+  const [fiches, setFiches] = useState<Fiche[]>([]);
+  const [chargementStats, setChargementStats] = useState(true);
 
-  async function generer() {
-    if (!theme) {
-      alert("Remplis le thème du cours");
-      return;
-    }
-    setChargement(true);
-    setResultat("");
+  useEffect(() => {
+    async function charger() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    try {
-      const reponse = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ classe, serie, discipline, theme, duree }),
-      });
-
-      const data = await reponse.json();
-      setResultat(data.contenu);
-    } catch (e) {
-      setResultat("Erreur lors de la génération.");
-    }
-    setChargement(false);
-  }
-
-  function copier() {
-    navigator.clipboard.writeText(resultat);
-    alert("Fiche copiée ! Colle-la dans Word.");
-  }
-
-  function imprimer() {
-    window.print();
-  }
-
-  async function sauvegarder() {
-    if (!resultat) {
-      alert("Aucune fiche à sauvegarder.");
-      return;
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("Vous devez être connecté.");
-      router.push("/login");
-      return;
-    }
-
-    const { error } = await supabase.from("fiches").insert([
-      {
-        theme,
-        discipline,
-        classe,
-        serie,
-        duree,
-        contenu: resultat,
-        user_id: user.id,
-      },
-    ]);
-
-    if (error) {
-      alert("Erreur lors de la sauvegarde : " + error.message);
-    } else {
-      alert("Fiche sauvegardée avec succès !");
-    }
-  }
-
-  async function telechargerWord() {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import(
-      "docx"
-    );
-
-    const lignes = resultat.split("\n");
-    const paragraphes: any[] = [];
-
-    function texteEnRuns(texte: string): any[] {
-      const morceaux = texte.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-      return morceaux
-        .filter((m) => m !== "")
-        .map((m) => {
-          if (m.startsWith("**") && m.endsWith("**")) {
-            return new TextRun({ text: m.slice(2, -2), bold: true });
-          }
-          if (m.startsWith("*") && m.endsWith("*") && m.length > 2) {
-            return new TextRun({ text: m.slice(1, -1), italics: true });
-          }
-          return new TextRun({ text: m });
-        });
-    }
-
-    for (const ligne of lignes) {
-      const texte = ligne.trim();
-      if (!texte) {
-        paragraphes.push(new Paragraph({ text: "" }));
-        continue;
+      if (!user) {
+        router.push("/login");
+        return;
       }
 
-      if (texte.startsWith("# ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^#\s+/, ""),
-            heading: HeadingLevel.HEADING_1,
-          })
-        );
-      } else if (texte.startsWith("## ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^##\s+/, ""),
-            heading: HeadingLevel.HEADING_2,
-          })
-        );
-      } else if (texte.startsWith("### ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^###\s+/, ""),
-            heading: HeadingLevel.HEADING_3,
-          })
-        );
-      } else if (texte.startsWith("#### ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^####\s+/, ""),
-            heading: HeadingLevel.HEADING_4,
-          })
-        );
-      } else if (texte === "---") {
-        paragraphes.push(new Paragraph({ text: "" }));
-      } else if (texte.startsWith("* ") || texte.startsWith("- ")) {
-        const contenuListe = texte.replace(/^[*\-]\s+/, "");
-        paragraphes.push(
-          new Paragraph({
-            children: texteEnRuns(contenuListe),
-            bullet: { level: 0 },
-          })
-        );
-      } else if (/^\d+\.\s+/.test(texte)) {
-        const contenuListe = texte.replace(/^\d+\.\s+/, "");
-        paragraphes.push(
-          new Paragraph({
-            children: texteEnRuns(contenuListe),
-            numbering: { reference: "default-numbering", level: 0 },
-          })
-        );
-      } else if (texte.startsWith("> ")) {
-        const contenuCitation = texte.replace(/^>\s+/, "");
-        paragraphes.push(
-          new Paragraph({
-            children: texteEnRuns(contenuCitation),
-            indent: { left: 720 },
-          })
-        );
+      const nomMeta = (user.user_metadata?.nom as string) || "";
+      const etabMeta = (user.user_metadata?.etablissement as string) || "";
+      setPrenom(nomMeta);
+      setEtablissement(etabMeta);
+
+      const { data, error } = await supabase
+        .from("fiches")
+        .select("id, created_at, discipline")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error(error);
       } else {
-        paragraphes.push(new Paragraph({ children: texteEnRuns(texte) }));
+        setFiches(data || []);
       }
+      setChargementStats(false);
     }
+    charger();
+  }, [router, supabase]);
 
-    const doc = new Document({
-      numbering: {
-        config: [
-          {
-            reference: "default-numbering",
-            levels: [
-              {
-                level: 0,
-                format: "decimal",
-                text: "%1.",
-                alignment: "start",
-              },
-            ],
-          },
-        ],
-      },
-      sections: [{ children: paragraphes }],
-    });
-
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fiche-APC-${theme.replace(/\s+/g, "-")}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function deconnexion() {
+    await supabase.auth.signOut();
+    router.push("/login");
   }
+
+  const total = fiches.length;
+
+  const debutMois = new Date();
+  debutMois.setDate(1);
+  debutMois.setHours(0, 0, 0, 0);
+  const ceMois = fiches.filter(
+    (f) => new Date(f.created_at) >= debutMois
+  ).length;
+
+  const disciplinesUniques = new Set(
+    fiches.map((f) => f.discipline).filter(Boolean)
+  ).size;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-green-800 mb-6 print:hidden">
-          Nouvelle fiche de cours
-        </h1>
+    <main className="min-h-screen flex relative bg-[#faf6ec]">
+      <div className="bande-tricolore w-2 md:w-3 h-screen fixed left-0 top-0 z-10" />
 
-        <div className="bg-white p-6 rounded-lg shadow space-y-4 print:hidden">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold mb-1">Classe</label>
-              <select
-                value={classe}
-                onChange={(e) => setClasse(e.target.value)}
-                className="w-full border rounded p-2"
+      <div className="flex-1 ml-2 md:ml-3 motif-bogolan">
+        <nav className="border-b border-[#3e2723]/10 bg-white/60 backdrop-blur-sm">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <Link
+              href="/accueil"
+              className="titre-kalan text-2xl font-bold text-[#14532d]"
+            >
+              Kalan Blon
+            </Link>
+            <div className="flex items-center gap-6 text-sm">
+              <Link href="/accueil" className="font-medium text-[#14b53a]">
+                Accueil
+              </Link>
+              <Link href="/cours" className="font-medium hover:text-[#14b53a]">
+                Mes fiches
+              </Link>
+              <Link
+                href="/cours/nouveau"
+                className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-4 py-2 rounded-lg font-medium transition"
               >
-                <option value="10eme">10ème année</option>
-                <option value="11eme">11ème année</option>
-                <option value="12eme">12ème (Terminale)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold mb-1">Série</label>
-              <select
-                value={serie}
-                onChange={(e) => setSerie(e.target.value)}
-                className="w-full border rounded p-2"
+                + Créer
+              </Link>
+              <button
+                onClick={deconnexion}
+                className="text-[#3e2723]/60 hover:text-[#ce1126] font-medium transition"
               >
-                <option value="commune">Tronc commun</option>
-                <option value="L">Littéraire (L)</option>
-                <option value="SES">Sciences Éco. et Sociales</option>
-                <option value="S">Scientifique (S)</option>
-                <option value="TLL">TLL</option>
-                <option value="TAL">TAL</option>
-                <option value="TSS">TSS</option>
-                <option value="TSEco">TSEco</option>
-                <option value="TSExp">TSExp</option>
-                <option value="TSE">TSE</option>
-              </select>
+                Déconnexion
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="mb-14">
+            <h1 className="titre-kalan text-4xl md:text-5xl font-bold text-[#14532d] mb-3">
+              Bienvenue, {prenom || "enseignant"}
+            </h1>
+            <p className="text-lg text-[#3e2723]/70 citation-kalan">
+              {etablissement
+                ? `${etablissement} — Prêt à ouvrir la porte du savoir pour vos élèves ?`
+                : "Prêt à ouvrir la porte du savoir pour vos élèves ?"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-14">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
+              <div className="text-3xl mb-2">📚</div>
+              <div className="text-4xl font-bold text-[#14532d] mb-1">
+                {chargementStats ? "—" : total}
+              </div>
+              <div className="text-sm text-[#3e2723]/60">
+                {total > 1 ? "Fiches créées" : "Fiche créée"}
+              </div>
             </div>
 
-            <div>
-              <label className="block font-semibold mb-1">Discipline</label>
-              <input
-                type="text"
-                value={discipline}
-                onChange={(e) => setDiscipline(e.target.value)}
-                className="w-full border rounded p-2"
-              />
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
+              <div className="text-3xl mb-2">✍️</div>
+              <div className="text-4xl font-bold text-[#14532d] mb-1">
+                {chargementStats ? "—" : ceMois}
+              </div>
+              <div className="text-sm text-[#3e2723]/60">
+                {ceMois > 1 ? "Fiches ce mois-ci" : "Fiche ce mois-ci"}
+              </div>
             </div>
 
-            <div>
-              <label className="block font-semibold mb-1">Durée (min)</label>
-              <input
-                type="number"
-                value={duree}
-                onChange={(e) => setDuree(e.target.value)}
-                className="w-full border rounded p-2"
-              />
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
+              <div className="text-3xl mb-2">🏫</div>
+              <div className="text-4xl font-bold text-[#14532d] mb-1">
+                {chargementStats ? "—" : disciplinesUniques}
+              </div>
+              <div className="text-sm text-[#3e2723]/60">
+                {disciplinesUniques > 1
+                  ? "Disciplines couvertes"
+                  : "Discipline couverte"}
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block font-semibold mb-1">Thème du cours</label>
-            <input
-              type="text"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              placeholder="Ex : Les équations du second degré"
-              className="w-full border rounded p-2"
-            />
+          <div className="grid md:grid-cols-2 gap-6 mb-14">
+            <Link
+              href="/cours/nouveau"
+              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-4xl mb-4">✍️</div>
+              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
+                Créer une fiche APC
+              </h2>
+              <p className="text-[#3e2723]/70">
+                Générez une fiche de cours complète en quelques minutes, adaptée
+                à votre classe et conforme à l'APC.
+              </p>
+              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Commencer →
+              </div>
+            </Link>
+
+            <Link
+              href="/cours"
+              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-4xl mb-4">📚</div>
+              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
+                Mes fiches
+              </h2>
+              <p className="text-[#3e2723]/70">
+                Retrouvez toutes vos fiches sauvegardées et rouvrez-les en un
+                clic.
+              </p>
+              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Voir mes fiches →
+              </div>
+            </Link>
           </div>
 
-          <button
-            onClick={generer}
-            disabled={chargement}
-            className="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 disabled:opacity-50"
-          >
-            {chargement ? "Génération en cours..." : "Générer la fiche"}
-          </button>
+          <div className="bg-white/70 border-l-4 border-[#fcd116] rounded-r-lg p-6">
+            <p className="citation-kalan text-lg text-[#3e2723]">
+              « L'école est la lumière qui éclaire le chemin de la nation. »
+            </p>
+            <p className="text-xs text-[#3e2723]/50 mt-2 tracking-widest uppercase">
+              Sagesse malienne
+            </p>
+          </div>
         </div>
-
-        {resultat && (
-          <>
-            <div className="flex gap-2 mt-6 print:hidden flex-wrap">
-              <button
-                onClick={sauvegarder}
-                className="flex-1 min-w-[150px] bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800"
-              >
-                💾 Sauvegarder
-              </button>
-              <button
-                onClick={copier}
-                className="flex-1 min-w-[150px] bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-              >
-                📋 Copier
-              </button>
-              <button
-                onClick={telechargerWord}
-                className="flex-1 min-w-[150px] bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700"
-              >
-                📄 Word
-              </button>
-              <button
-                onClick={imprimer}
-                className="flex-1 min-w-[150px] bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
-              >
-                🖨️ Imprimer
-              </button>
-            </div>
-
-            <div className="bg-white p-8 rounded-lg shadow mt-6 print:shadow-none print:p-0">
-              <article className="max-w-none text-gray-800 leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {resultat}
-                </ReactMarkdown>
-              </article>
-            </div>
-          </>
-        )}
       </div>
     </main>
   );
