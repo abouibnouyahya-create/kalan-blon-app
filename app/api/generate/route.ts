@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -6,12 +8,10 @@ const openai = new OpenAI({
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
-// Fonction qui attend X millisecondes
 function attendre(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Fonction qui essaie plusieurs modèles en cas d'échec
 async function genererAvecRetry(prompt: string) {
   const modeles = [
     "gemini-3.8-flash",
@@ -20,7 +20,7 @@ async function genererAvecRetry(prompt: string) {
     "gemini-3.5-flash-lite",
   ];
 
-  let derniereErreur: any = null;
+  let derniereErreur: unknown = null;
 
   for (const modele of modeles) {
     for (let tentative = 1; tentative <= 2; tentative++) {
@@ -36,16 +36,16 @@ async function genererAvecRetry(prompt: string) {
           console.log(`✅ Succès avec ${modele}`);
           return contenu;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         derniereErreur = err;
-        const code = err?.status || err?.response?.status;
+        const code =
+          (err as { status?: number })?.status ||
+          (err as { response?: { status?: number } })?.response?.status;
         console.warn(`❌ ${modele} a échoué (code ${code})`);
 
-        // Si surcharge (503) ou timeout, on attend avant de réessayer
         if (code === 503 || code === 429 || code === 500) {
-          await attendre(tentative * 2000); // 2s, 4s...
+          await attendre(tentative * 2000);
         } else {
-          // Erreur fatale (clé invalide, modèle inexistant) → on saute au suivant
           break;
         }
       }
@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
   try {
     const { classe, serie, discipline, theme, duree } = await req.json();
 
-    // Déterminer la langue du contenu
     const disciplineLower = discipline.toLowerCase();
     let langueContenu = "français";
     let consigneLangue = "";
@@ -69,11 +68,8 @@ export async function POST(req: NextRequest) {
       consigneLangue = `
 ⚠️ RÈGLE IMPORTANTE DE LANGUE :
 - Toute la fiche doit être rédigée EN ANGLAIS (titres, consignes, contenu pédagogique).
-- Seul l'en-tête administratif reste en français :
-  * Établissement, Classe, Série, Discipline, Durée, Effectif, Nom du professeur
-- Tout le reste (compétences, objectifs, situation, déroulement, évaluation, remédiation, devoir)
-  doit être EN ANGLAIS.
-- Les consignes de l'enseignant doivent être en anglais ("Teacher's activity", "Students' activity").
+- Seul l'en-tête administratif reste en français.
+- Les consignes doivent être en anglais ("Teacher's activity", "Students' activity").
 - La situation d'apprentissage doit être EN ANGLAIS mais ancrée dans le contexte malien.`;
     } else if (disciplineLower.includes("arabe")) {
       langueContenu = "arabe";
@@ -120,12 +116,14 @@ Rappel : la langue principale de la fiche est **${langueContenu}**.`;
     const contenu = await genererAvecRetry(prompt);
 
     return NextResponse.json({ contenu });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("ERREUR FINALE:", error);
-    const code = error?.status || error?.response?.status;
+    const code =
+      (error as { status?: number })?.status ||
+      (error as { response?: { status?: number } })?.response?.status;
     let message = "Erreur lors de la génération. Réessayez dans quelques instants.";
     if (code === 503) {
-      message = "Les serveurs IA sont surchargés. Veuillez patienter 1 minute et réessayer.";
+      message = "Les serveurs IA sont surchargés. Patientez 1 minute et réessayez.";
     } else if (code === 401) {
       message = "Clé API invalide. Vérifiez votre fichier .env.local.";
     } else if (code === 429) {
