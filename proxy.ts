@@ -1,11 +1,5 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-type CookieToSet = {
-  name: string;
-  value: string;
-  options: CookieOptions;
-};
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -20,37 +14,22 @@ export async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: CookieToSet[]) {
+        setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value);
           });
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set({ name, value, ...options });
+            response.cookies.set(name, value, options);
           });
         },
       },
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const chemin = request.nextUrl.pathname;
-
-  // Protection des routes
-  if (
-    !user &&
-    (chemin.startsWith("/accueil") || chemin.startsWith("/cours"))
-  ) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Si déjà connecté, ne pas aller sur /login
-  if (user && chemin === "/login") {
-    return NextResponse.redirect(new URL("/accueil", request.url));
-  }
+  // Diagnostic : on ne fait AUCUNE redirection pour l'instant
+  // On laisse juste Supabase rafraîchir la session
+  await supabase.auth.getUser();
 
   return response;
 }
