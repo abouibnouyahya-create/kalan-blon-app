@@ -27,8 +27,7 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Diagnostic : on ne fait AUCUNE redirection pour l'instant
-  // On laisse juste Supabase rafraîchir la session
+  // On rafraîchit juste la session Supabase, on ne redirige rien
   await supabase.auth.getUser();
 
   return response;
