@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function Vestibule() {
   return (
@@ -47,7 +47,7 @@ export default function Vestibule() {
 
           {/* Bouton principal */}
           <Link
-            href="/identification"
+            href="/login"
             className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-10 py-4 rounded-lg text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-3 mb-10"
           >
             Franchir la porte
