@@ -180,13 +180,10 @@ export default function DetailFiche() {
 
   if (chargement) {
     return (
-      <main className="min-h-screen flex relative bg-[#faf6ec]">
-        <div className="bande-tricolore w-2 md:w-3 h-screen fixed left-0 top-0 z-10" />
-        <div className="flex-1 ml-2 md:ml-3 flex items-center justify-center">
-          <p className="text-[#3e2723]/60 citation-kalan text-lg">
-            Chargement de la fiche…
-          </p>
-        </div>
+      <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
+        <p className="text-[#3e2723]/60 citation-kalan text-lg">
+          Chargement de la fiche…
+        </p>
       </main>
     );
   }
@@ -207,10 +204,7 @@ export default function DetailFiche() {
               Kalan Blon
             </Link>
             <div className="flex items-center gap-6 text-sm">
-              <Link
-                href="/accueil"
-                className="font-medium hover:text-[#14b53a]"
-              >
+              <Link href="/accueil" className="font-medium hover:text-[#14b53a]">
                 Accueil
               </Link>
               <Link href="/cours" className="font-medium hover:text-[#14b53a]">

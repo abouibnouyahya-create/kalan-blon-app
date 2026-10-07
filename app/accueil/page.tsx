@@ -19,6 +19,7 @@ export default function Accueil() {
   const [etablissement, setEtablissement] = useState<string>("");
   const [fiches, setFiches] = useState<Fiche[]>([]);
   const [chargementStats, setChargementStats] = useState(true);
+  const [verif, setVerif] = useState(true);
 
   useEffect(() => {
     async function charger() {
@@ -47,6 +48,7 @@ export default function Accueil() {
         setFiches(data || []);
       }
       setChargementStats(false);
+      setVerif(false);
     }
     charger();
   }, [router, supabase]);
@@ -68,6 +70,16 @@ export default function Accueil() {
   const disciplinesUniques = new Set(
     fiches.map((f) => f.discipline).filter(Boolean)
   ).size;
+
+  if (verif) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
+        <p className="text-[#3e2723]/60 citation-kalan text-lg">
+          Chargement…
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex relative bg-[#faf6ec]">

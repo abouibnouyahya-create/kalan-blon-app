@@ -23,31 +23,33 @@ export default function MesFiches() {
   const [chargement, setChargement] = useState(true);
   const [recherche, setRecherche] = useState("");
 
-  async function charger() {
-    setChargement(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  useEffect(() => {
+    async function charger() {
+      setChargement(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      router.push("/login");
-      return;
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("fiches")
+        .select("id, created_at, theme, discipline, classe, serie, duree")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+      } else {
+        setFiches(data || []);
+      }
+      setChargement(false);
     }
-
-    const { data, error } = await supabase
-      .from("fiches")
-      .select("id, created_at, theme, discipline, classe, serie, duree")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      alert("Erreur lors du chargement : " + error.message);
-    } else {
-      setFiches(data || []);
-    }
-    setChargement(false);
-  }
+    charger();
+  }, [router, supabase]);
 
   async function supprimer(id: number) {
     if (!confirm("Supprimer cette fiche ?")) return;
@@ -58,10 +60,6 @@ export default function MesFiches() {
       setFiches(fiches.filter((f) => f.id !== id));
     }
   }
-
-  useEffect(() => {
-    charger();
-  }, []);
 
   const fichesFiltrees = fiches.filter(
     (f) =>
@@ -140,9 +138,7 @@ export default function MesFiches() {
             <div className="bg-white/70 rounded-xl p-12 text-center border border-[#3e2723]/5">
               <div className="text-5xl mb-4">📚</div>
               <h2 className="text-2xl font-bold text-[#14532d] mb-2">
-                {recherche
-                  ? "Aucun résultat"
-                  : "Aucune fiche pour le moment"}
+                {recherche ? "Aucun résultat" : "Aucune fiche pour le moment"}
               </h2>
               <p className="text-[#3e2723]/70 mb-6">
                 {recherche
