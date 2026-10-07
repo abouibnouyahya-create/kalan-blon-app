@@ -3,16 +3,17 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-});
-
 function attendre(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function genererAvecRetry(prompt: string) {
+  // ⚠️ Instanciation DANS la fonction, pas au niveau du module
+  const openai = new OpenAI({
+    apiKey: process.env.GEMINI_API_KEY || "missing-key",
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+  });
+
   const modeles = [
     "gemini-3.8-flash",
     "gemini-3.6-flash",
