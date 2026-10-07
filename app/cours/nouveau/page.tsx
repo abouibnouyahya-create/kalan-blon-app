@@ -1,198 +1,71 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
-type Fiche = {
-  id: number;
-  created_at: string;
-  discipline: string | null;
-};
-
-export default function Accueil() {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const [prenom, setPrenom] = useState<string>("");
-  const [etablissement, setEtablissement] = useState<string>("");
-  const [fiches, setFiches] = useState<Fiche[]>([]);
-  const [chargementStats, setChargementStats] = useState(true);
-
-  useEffect(() => {
-    async function charger() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-
-      const nomMeta = (user.user_metadata?.nom as string) || "";
-      const etabMeta = (user.user_metadata?.etablissement as string) || "";
-      setPrenom(nomMeta);
-      setEtablissement(etabMeta);
-
-      const { data, error } = await supabase
-        .from("fiches")
-        .select("id, created_at, discipline")
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error(error);
-      } else {
-        setFiches(data || []);
-      }
-      setChargementStats(false);
-    }
-    charger();
-  }, [router, supabase]);
-
-  async function deconnexion() {
-    await supabase.auth.signOut();
-    router.push("/login");
-  }
-
-  const total = fiches.length;
-
-  const debutMois = new Date();
-  debutMois.setDate(1);
-  debutMois.setHours(0, 0, 0, 0);
-  const ceMois = fiches.filter(
-    (f) => new Date(f.created_at) >= debutMois
-  ).length;
-
-  const disciplinesUniques = new Set(
-    fiches.map((f) => f.discipline).filter(Boolean)
-  ).size;
-
+export default function Vestibule() {
   return (
-    <main className="min-h-screen flex relative bg-[#faf6ec]">
+    <main className="min-h-screen flex relative overflow-hidden bg-[#faf6ec]">
+      {/* Bande tricolore verticale (drapeau malien) */}
       <div className="bande-tricolore w-2 md:w-3 h-screen fixed left-0 top-0 z-10" />
 
-      <div className="flex-1 ml-2 md:ml-3 motif-bogolan">
-        <nav className="border-b border-[#3e2723]/10 bg-white/60 backdrop-blur-sm">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link
-              href="/accueil"
-              className="titre-kalan text-2xl font-bold text-[#14532d]"
-            >
-              Kalan Blon
-            </Link>
-            <div className="flex items-center gap-6 text-sm">
-              <Link href="/accueil" className="font-medium text-[#14b53a]">
-                Accueil
-              </Link>
-              <Link href="/cours" className="font-medium hover:text-[#14b53a]">
-                Mes fiches
-              </Link>
-              <Link
-                href="/cours/nouveau"
-                className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                + Créer
-              </Link>
-              <button
-                onClick={deconnexion}
-                className="text-[#3e2723]/60 hover:text-[#ce1126] font-medium transition"
-              >
-                Déconnexion
-              </button>
-            </div>
-          </div>
-        </nav>
+      {/* Fond avec motif bogolan */}
+      <div className="absolute inset-0 motif-bogolan pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="mb-14">
-            <h1 className="titre-kalan text-4xl md:text-5xl font-bold text-[#14532d] mb-3">
-              Bienvenue, {prenom || "enseignant"}
-            </h1>
-            <p className="text-lg text-[#3e2723]/70 citation-kalan">
-              {etablissement
-                ? `${etablissement} — Prêt à ouvrir la porte du savoir pour vos élèves ?`
-                : "Prêt à ouvrir la porte du savoir pour vos élèves ?"}
+      {/* Contenu du vestibule */}
+      <div className="flex-1 flex items-center justify-center px-6 md:px-12 ml-2 md:ml-3 relative z-0 py-16">
+        <div className="max-w-2xl w-full flex flex-col items-center">
+          {/* Logo image */}
+          <div className="mb-8">
+            <img
+              src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=200&h=200&fit=crop&crop=center"
+              alt="Kalan Blon"
+              className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover shadow-lg ring-4 ring-white"
+            />
+          </div>
+
+          {/* Nom */}
+          <h1 className="titre-kalan text-5xl md:text-7xl font-black text-center mb-3 text-[#14532d]">
+            Kalan Blon
+          </h1>
+
+          {/* Slogan */}
+          <p className="text-center text-lg md:text-xl text-[#3e2723]/70 mb-8 tracking-wide">
+            La porte du savoir
+          </p>
+
+          {/* Ligne décorative */}
+          <div className="flex justify-center items-center gap-3 mb-8">
+            <div className="h-px bg-[#3e2723]/20 w-16" />
+            <div className="w-2 h-2 rounded-full bg-[#14b53a]" />
+            <div className="h-px bg-[#3e2723]/20 w-16" />
+          </div>
+
+          {/* Message */}
+          <p className="text-center text-xl md:text-2xl text-[#3e2723] leading-relaxed mb-12 citation-kalan">
+            Ouvrir la porte du savoir
+            <br />
+            pour chaque enseignant du secondaire malien
+          </p>
+
+          {/* Bouton principal — pointe vers /login */}
+          <Link
+            href="/login"
+            className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-10 py-4 rounded-lg text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center gap-3 mb-10"
+          >
+            Franchir la porte
+            <span className="text-2xl">→</span>
+          </Link>
+
+          {/* Touche malienne */}
+          <p className="text-center text-sm text-[#3e2723]/60 mb-16">
+            Kalan Blon — Un projet pour le Mali 🇲🇱
+          </p>
+
+          {/* Citation en bas */}
+          <div className="text-center">
+            <p className="citation-kalan text-[#3e2723]/50 text-base md:text-lg">
+              « Le savoir est une porte que seul l'effort ouvre »
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-14">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
-              <div className="text-3xl mb-2">📚</div>
-              <div className="text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : total}
-              </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {total > 1 ? "Fiches créées" : "Fiche créée"}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
-              <div className="text-3xl mb-2">✍️</div>
-              <div className="text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : ceMois}
-              </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {ceMois > 1 ? "Fiches ce mois-ci" : "Fiche ce mois-ci"}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
-              <div className="text-3xl mb-2">🏫</div>
-              <div className="text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : disciplinesUniques}
-              </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {disciplinesUniques > 1
-                  ? "Disciplines couvertes"
-                  : "Discipline couverte"}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-14">
-            <Link
-              href="/cours/nouveau"
-              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
-            >
-              <div className="text-4xl mb-4">✍️</div>
-              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
-                Créer une fiche APC
-              </h2>
-              <p className="text-[#3e2723]/70">
-                Générez une fiche de cours complète en quelques minutes, adaptée
-                à votre classe et conforme à l'APC.
-              </p>
-              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
-                Commencer →
-              </div>
-            </Link>
-
-            <Link
-              href="/cours"
-              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
-            >
-              <div className="text-4xl mb-4">📚</div>
-              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
-                Mes fiches
-              </h2>
-              <p className="text-[#3e2723]/70">
-                Retrouvez toutes vos fiches sauvegardées et rouvrez-les en un
-                clic.
-              </p>
-              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
-                Voir mes fiches →
-              </div>
-            </Link>
-          </div>
-
-          <div className="bg-white/70 border-l-4 border-[#fcd116] rounded-r-lg p-6">
-            <p className="citation-kalan text-lg text-[#3e2723]">
-              « L'école est la lumière qui éclaire le chemin de la nation. »
-            </p>
-            <p className="text-xs text-[#3e2723]/50 mt-2 tracking-widest uppercase">
-              Sagesse malienne
+            <p className="text-[#3e2723]/40 text-xs mt-1 tracking-widest uppercase">
+              Proverbe bambara
             </p>
           </div>
         </div>
