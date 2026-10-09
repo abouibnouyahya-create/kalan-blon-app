@@ -50,15 +50,8 @@ async function genererAvecRetry(prompt: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const {
-      type,
-      classe,
-      serie,
-      discipline,
-      theme,
-      duree,
-      avecCorrige,
-    } = await req.json();
+    const { type, classe, serie, discipline, theme, duree, avecCorrige } =
+      await req.json();
 
     // Libellés français des types
     const typeLabels: Record<string, string> = {
@@ -83,21 +76,27 @@ export async function POST(req: NextRequest) {
 Tout le reste (consignes, exercices, questions) doit être EN ANGLAIS.`;
     } else if (disciplineLower.includes("arabe")) {
       langueContenu = "arabe";
-      consigneLangue = "Toute la fiche doit être rédigée EN ARABE, sauf l'en-tête administratif.";
+      consigneLangue =
+        "Toute la fiche doit être rédigée EN ARABE, sauf l'en-tête administratif.";
     }
 
-    // Durée selon le type
+    // Durée recommandée selon le type
     const dureeRecommandee =
-      type === "evaluation" ? "30 minutes" :
-      type === "devoir_maison" ? "à faire à la maison" :
-      duree || "1 heure";
+      type === "evaluation"
+        ? "30 minutes"
+        : type === "devoir_maison"
+        ? "à faire à la maison"
+        : duree || "1 heure";
 
     // Nombre d'exercices selon le type
     const nbExercices =
-      type === "evaluation" ? "2 à 3" :
-      type === "devoir_maison" ? "3 à 4" :
-      type === "devoir_surveille" ? "3 à 4" :
-      "4 à 5"; // sujet_examen
+      type === "evaluation"
+        ? "2 à 3"
+        : type === "devoir_maison"
+        ? "3 à 4"
+        : type === "devoir_surveille"
+        ? "3 à 4"
+        : "4 à 5";
 
     const prompt = `Tu es un expert en évaluation pédagogique selon l'Approche Par Compétences (APC) du système éducatif malien.
 
@@ -152,7 +151,7 @@ STRUCTURE OBLIGATOIRE (Markdown) :
 
 ---
 
-## CONSIGNES POUR L'ENSEIGNANT (à imprimer séparément si nécessaire)
+## CONSIGNES POUR L'ENSEIGNANT
 
 - Durée conseillée : ${dureeRecommandee}
 - Matériel autorisé : calculatrice (pour les maths), dictionnaire (pour les langues), aucun autre document
@@ -161,22 +160,45 @@ STRUCTURE OBLIGATOIRE (Markdown) :
 
 ---
 
-CONSIGNES :
+CONSIGNES STRICTES :
+
 1. Les exercices doivent être progressifs (facile → difficile)
 2. Le barème doit être CLAIR et DÉTAILLÉ par question
-3. Les exercices doivent être ancrés dans le CONTEXTE MALIEN (noms maliens, situations locales : marché, agriculture, transport, école...)
+3. Les exercices doivent être ancrés dans le CONTEXTE MALIEN (noms maliens : Aminata, Boubacar, Moussa, Fatoumata, etc. ; situations locales : marché, agriculture, transport, école, famille...)
 4. Utilise un langage simple, adapté au niveau ${classe}
-5. Pour les maths : inclus les formules et définitions nécessaires
-6. Pour les langues : inclus de la lecture, grammaire, expression écrite
-7. Pour les sciences : inclus schémas à compléter, expériences à décrire
-8. Le sujet doit être prêt à imprimer tel quel`;
+5. Le sujet doit être prêt à imprimer tel quel
+
+⚠️ RÈGLE DE FORMATAGE TRÈS IMPORTANTE :
+6. **N'utilise JAMAIS de tableaux Markdown (avec des | et des ---).** Ils s'affichent mal dans notre application.
+   À la place, utilise des LISTES NUMÉROTÉES ou des TIRETS.
+   
+   ❌ INTERDIT :
+   | N° | Type | Avantage/Inconvénient |
+   |----|------|----------------------|
+   | 1  | Arg  | Avantage             |
+   
+   ✅ AUTORISÉ :
+   - Ligne 1 : Type ? ______ / Avantage ou Inconvénient ? ______
+   - Ligne 2 : Type ? ______ / Avantage ou Inconvénient ? ______
+
+7. Pour les exercices à remplir par l'élève, utilise des POINTILLÉS :
+   - ______ (pour les réponses courtes)
+   - ................................................................ (pour les phrases complètes)
+   - ☐ (pour les cases à cocher)
+
+8. Structure chaque exercice ainsi :
+   - Titre de l'exercice (avec le barème entre parenthèses)
+   - Consigne claire
+   - Liste des questions numérotées avec les points entre parenthèses
+
+9. N'utilise PAS de symboles Markdown exotiques (---, ===, etc.) — reste simple.`;
 
     const sujet = await genererAvecRetry(prompt);
 
-    // Générer le corrigé si demandé
+    // Génération du corrigé si demandé
     let corrige = "";
     if (avecCorrige) {
-      await attendre(1000); // petit délai pour éviter la surcharge
+      await attendre(1000);
       const promptCorrige = `Voici un sujet d'évaluation :
 
 ${sujet}
@@ -186,12 +208,32 @@ Génère le CORRIGÉ COMPLET de ce sujet, avec :
 - Barème appliqué question par question
 - Commentaires pédagogiques pour l'enseignant
 
-Format Markdown. Langue : ${langueContenu}.`;
+⚠️ RÈGLES :
+- N'utilise PAS de tableaux Markdown (avec des | et ---)
+- Utilise des listes numérotées ou des tirets
+- Format Markdown simple
+- Langue : ${langueContenu}
+
+Format attendu :
+# CORRIGÉ — [Titre du sujet]
+
+## EXERCICE 1 ([X] points)
+
+### Question 1 ([X] pt)
+**Réponse attendue :** ...
+**Commentaire pédagogique :** ...
+
+### Question 2 ([X] pts)
+...
+
+## EXERCICE 2 ([X] points)
+...`;
 
       try {
         corrige = await genererAvecRetry(promptCorrige);
       } catch (e) {
-        corrige = "Le corrigé n'a pas pu être généré. Vous pouvez le créer manuellement.";
+        corrige =
+          "Le corrigé n'a pas pu être généré. Vous pouvez le créer manuellement.";
       }
     }
 
@@ -199,7 +241,11 @@ Format Markdown. Langue : ${langueContenu}.`;
   } catch (error: unknown) {
     console.error("ERREUR:", error);
     return NextResponse.json(
-      { sujet: "Erreur lors de la génération. Réessayez dans quelques instants.", corrige: "" },
+      {
+        sujet:
+          "Erreur lors de la génération. Réessayez dans quelques instants.",
+        corrige: "",
+      },
       { status: 500 }
     );
   }
