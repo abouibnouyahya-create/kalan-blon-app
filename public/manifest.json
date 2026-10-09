@@ -1,0 +1,26 @@
+{
+  "name": "Kalan Blon — La porte du savoir",
+  "short_name": "Kalan Blon",
+  "description": "L'APC simplifiée pour les enseignants maliens",
+  "start_url": "/accueil",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6ec",
+  "theme_color": "#14b53a",
+  "lang": "fr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

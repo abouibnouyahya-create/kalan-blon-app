@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BoutonInstallation from "@/app/components/BoutonInstallation";
 
 export default function Login() {
   const router = useRouter();
@@ -191,6 +192,8 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      <BoutonInstallation />
     </main>
   );
 }

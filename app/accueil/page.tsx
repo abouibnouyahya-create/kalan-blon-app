@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BoutonInstallation from "@/app/components/BoutonInstallation";
 
 type Fiche = {
   id: number;
@@ -74,9 +75,7 @@ export default function Accueil() {
   if (verif) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
-        <p className="text-[#3e2723]/60 citation-kalan text-lg">
-          Chargement…
-        </p>
+        <p className="text-[#3e2723]/60 citation-kalan text-lg">Chargement…</p>
       </main>
     );
   }
@@ -209,6 +208,8 @@ export default function Accueil() {
           </div>
         </div>
       </div>
+
+      <BoutonInstallation />
     </main>
   );
 }
