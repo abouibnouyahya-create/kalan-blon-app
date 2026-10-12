@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createClient } from "@/lib/supabase/client";
+import EcranChargement from "@/app/components/EcranChargement";
 
 export default function NouveauDevoir() {
   const router = useRouter();
@@ -238,11 +239,29 @@ export default function NouveauDevoir() {
     URL.revokeObjectURL(url);
   }
 
+  // Écran de chargement initial
   if (verif) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
-        <p className="text-[#3e2723]/60 citation-kalan text-lg">Chargement…</p>
-      </main>
+      <EcranChargement message="Chargement de Kalan Blon…" dureeEstimee={3} />
+    );
+  }
+
+  // Écran de chargement pendant la génération
+  if (chargement) {
+    return (
+      <EcranChargement
+        message="Génération du sujet en cours…"
+        dureeEstimee={30}
+      />
+    );
+  }
+
+  if (chargementCorrige) {
+    return (
+      <EcranChargement
+        message="Génération du corrigé en cours…"
+        dureeEstimee={40}
+      />
     );
   }
 
@@ -358,7 +377,7 @@ export default function NouveauDevoir() {
 
         {sujet && (
           <>
-            {/* Bouton Générer le corrigé (si pas encore généré) */}
+            {/* Bouton Générer le corrigé */}
             {!corrige && (
               <div className="flex gap-2 mt-6 print:hidden">
                 <button
@@ -367,13 +386,13 @@ export default function NouveauDevoir() {
                   className="flex-1 bg-[#fcd116] text-[#3e2723] py-3 rounded-lg font-semibold hover:bg-[#e6bc00] transition disabled:opacity-50"
                 >
                   {chargementCorrige
-                    ? "Génération du corrigé… (patientez 10-15 sec)"
+                    ? "Génération du corrigé…"
                     : "✅ Générer le corrigé"}
                 </button>
               </div>
             )}
 
-            {/* Onglets Sujet / Corrigé (si corrigé existe) */}
+            {/* Onglets Sujet / Corrigé */}
             {corrige && (
               <div className="flex gap-2 mt-6 print:hidden">
                 <button
@@ -427,6 +446,7 @@ export default function NouveauDevoir() {
               </button>
             </div>
 
+            {/* Affichage Sujet ou Corrigé */}
             <div className="bg-white p-8 rounded-lg shadow mt-6 print:shadow-none print:p-0">
               <article className="max-w-none text-gray-800 leading-relaxed">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
