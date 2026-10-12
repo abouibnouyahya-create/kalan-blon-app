@@ -12,6 +12,11 @@ type Fiche = {
   discipline: string | null;
 };
 
+type Devoir = {
+  id: number;
+  created_at: string;
+};
+
 export default function Accueil() {
   const router = useRouter();
   const supabase = createClient();
@@ -19,6 +24,7 @@ export default function Accueil() {
   const [prenom, setPrenom] = useState<string>("");
   const [etablissement, setEtablissement] = useState<string>("");
   const [fiches, setFiches] = useState<Fiche[]>([]);
+  const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [chargementStats, setChargementStats] = useState(true);
   const [verif, setVerif] = useState(true);
 
@@ -38,16 +44,20 @@ export default function Accueil() {
       setPrenom(nomMeta);
       setEtablissement(etabMeta);
 
-      const { data, error } = await supabase
+      // Charger les fiches
+      const { data: fichesData } = await supabase
         .from("fiches")
         .select("id, created_at, discipline")
         .eq("user_id", user.id);
 
-      if (error) {
-        console.error(error);
-      } else {
-        setFiches(data || []);
-      }
+      // Charger les devoirs
+      const { data: devoirsData } = await supabase
+        .from("devoirs")
+        .select("id, created_at")
+        .eq("user_id", user.id);
+
+      setFiches(fichesData || []);
+      setDevoirs(devoirsData || []);
       setChargementStats(false);
       setVerif(false);
     }
@@ -59,13 +69,19 @@ export default function Accueil() {
     router.push("/login");
   }
 
-  const total = fiches.length;
+  const totalFiches = fiches.length;
+  const totalDevoirs = devoirs.length;
 
   const debutMois = new Date();
   debutMois.setDate(1);
   debutMois.setHours(0, 0, 0, 0);
-  const ceMois = fiches.filter(
+
+  const fichesCeMois = fiches.filter(
     (f) => new Date(f.created_at) >= debutMois
+  ).length;
+
+  const devoirsCeMois = devoirs.filter(
+    (d) => new Date(d.created_at) >= debutMois
   ).length;
 
   const disciplinesUniques = new Set(
@@ -100,11 +116,8 @@ export default function Accueil() {
               <Link href="/cours" className="font-medium hover:text-[#14b53a]">
                 Mes fiches
               </Link>
-              <Link
-                href="/cours/nouveau"
-                className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                + Créer
+              <Link href="/devoirs" className="font-medium hover:text-[#14b53a]">
+                Mes devoirs
               </Link>
               <button
                 onClick={deconnexion}
@@ -117,6 +130,7 @@ export default function Accueil() {
         </nav>
 
         <div className="max-w-6xl mx-auto px-6 py-16">
+          {/* Bienvenue */}
           <div className="mb-14">
             <h1 className="titre-kalan text-4xl md:text-5xl font-bold text-[#14532d] mb-3">
               Bienvenue, {prenom || "enseignant"}
@@ -128,24 +142,25 @@ export default function Accueil() {
             </p>
           </div>
 
+          {/* Statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-14">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
               <div className="text-3xl mb-2">📚</div>
               <div className="text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : total}
+                {chargementStats ? "—" : totalFiches}
               </div>
               <div className="text-sm text-[#3e2723]/60">
-                {total > 1 ? "Fiches créées" : "Fiche créée"}
+                {totalFiches > 1 ? "Fiches créées" : "Fiche créée"}
               </div>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-sm border border-[#3e2723]/5">
-              <div className="text-3xl mb-2">✍️</div>
+              <div className="text-3xl mb-2">📝</div>
               <div className="text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : ceMois}
+                {chargementStats ? "—" : totalDevoirs}
               </div>
               <div className="text-sm text-[#3e2723]/60">
-                {ceMois > 1 ? "Fiches ce mois-ci" : "Fiche ce mois-ci"}
+                {totalDevoirs > 1 ? "Devoirs créés" : "Devoir créé"}
               </div>
             </div>
 
@@ -162,6 +177,7 @@ export default function Accueil() {
             </div>
           </div>
 
+          {/* Cartes d'action — 4 cartes */}
           <div className="grid md:grid-cols-2 gap-6 mb-14">
             <Link
               href="/cours/nouveau"
@@ -181,6 +197,23 @@ export default function Accueil() {
             </Link>
 
             <Link
+              href="/devoirs/nouveau"
+              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-4xl mb-4">📝</div>
+              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
+                Générer un devoir / évaluation
+              </h2>
+              <p className="text-[#3e2723]/70">
+                Créez un devoir maison, une évaluation ou un sujet d'examen
+                complet avec corrigé.
+              </p>
+              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Créer un devoir →
+              </div>
+            </Link>
+
+            <Link
               href="/cours"
               className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
             >
@@ -189,15 +222,33 @@ export default function Accueil() {
                 Mes fiches
               </h2>
               <p className="text-[#3e2723]/70">
-                Retrouvez toutes vos fiches sauvegardées et rouvrez-les en un
-                clic.
+                Retrouvez toutes vos fiches de cours sauvegardées et rouvrez-les
+                en un clic.
               </p>
               <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Voir mes fiches →
               </div>
             </Link>
+
+            <Link
+              href="/devoirs"
+              className="group bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-4xl mb-4">🗂️</div>
+              <h2 className="text-2xl font-bold text-[#14532d] mb-2">
+                Mes devoirs
+              </h2>
+              <p className="text-[#3e2723]/70">
+                Consultez tous vos devoirs et évaluations sauvegardés, avec
+                leurs corrigés.
+              </p>
+              <div className="mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Voir mes devoirs →
+              </div>
+            </Link>
           </div>
 
+          {/* Citation */}
           <div className="bg-white/70 border-l-4 border-[#fcd116] rounded-r-lg p-6">
             <p className="citation-kalan text-lg text-[#3e2723]">
               « L'école est la lumière qui éclaire le chemin de la nation. »
