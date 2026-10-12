@@ -93,7 +93,7 @@ Tout le reste (consignes, exercices, questions) doit être EN ANGLAIS.`;
         ? "3 à 4"
         : "4 à 5";
 
-    const prompt = `Tu es un expert en évaluation pédagogique selon l'Approche Par Compétences (APC) du système éducatif malien.
+    const prompt = `Tu es un enseignant malien expérimenté qui prépare un sujet pour ses propres élèves.
 
 Génère un sujet complet de type : **${typeLigne}**
 
@@ -104,10 +104,50 @@ Paramètres :
 - Thème : ${theme}
 - Durée : ${dureeRecommandee}
 - Nombre d'exercices : ${nbExercices}
-- Barème total : 20 points (barème détaillé par question)
+- Barème total : 20 points
 
 ⚠️ RÈGLE DE LANGUE :
 ${consigneLangue}
+
+🎯 RÈGLE LA PLUS IMPORTANTE — NIVEAU DE LANGAGE :
+
+Imagine que tu écris pour un élève malien de ${classe} qui :
+- Vit à Bamako, Ségou, Sikasso ou dans un village
+- Va au marché, prend le Sotrama, aide ses parents
+- Parle bambara à la maison, français à l'école
+- N'a PAS l'habitude du français académique très soutenu
+
+✅ LANGAGE OBLIGATOIRE :
+- Phrases COURTES (maximum 15 mots)
+- Mots SIMPLES et courants (comme à la radio, dans la rue, au marché)
+- Exemples CONCRETS de la vie quotidienne malienne
+- Direct, clair, sans détour
+- Utilise "tu" ou "l'élève" (pas "l'apprenant" ni "le candidat")
+- Explique les mots difficiles entre parenthèses : "l'injustice (quand on n'est pas traité comme les autres)"
+
+❌ LANGAGE INTERDIT :
+- Phrases longues avec plusieurs propositions
+- Vocabulaire universitaire : "problématique", "modalité", "il convient de", "corrélativement"
+- Tournures impersonnelles : "on notera que", "il est à noter que"
+- Termes abstraits sans explication
+
+📚 EXEMPLES D'ADAPTATION :
+
+❌ MAUVAIS (trop soutenu) :
+"Analysez la portée sémantique du lexique employé par l'auteur dans ce poème, en vous appuyant sur les figures de style utilisées, afin de dégager la vision du monde qui s'en dégage."
+
+✅ BON (simple et clair) :
+"Dans ce poème, l'auteur utilise des mots très forts.
+1. Cite 2 mots qui montrent sa colère. (2 points)
+2. Que veut-il dire avec ces mots ? Explique en 2 ou 3 phrases. (4 points)"
+
+❌ MAUVAIS :
+"À la lumière de vos connaissances sur la Négritude et des textes étudiés en classe, établissez une corrélation entre la démarche de l'auteur et celle des écrivains africains de sa génération."
+
+✅ BON :
+"Langston Hughes parle des Noirs américains. Les écrivains africains de la Négritude (comme Senghor, Césaire) font la même chose.
+1. Cite 2 points communs entre ce poème et la Négritude. (3 points)
+2. Explique en 3 phrases pourquoi ce poème parle aussi aux jeunes Africains d'aujourd'hui. (3 points)"
 
 STRUCTURE OBLIGATOIRE (Markdown) :
 
@@ -149,39 +189,30 @@ STRUCTURE OBLIGATOIRE (Markdown) :
 ## CONSIGNES POUR L'ENSEIGNANT
 
 - Durée conseillée : ${dureeRecommandee}
-- Matériel autorisé : calculatrice (pour les maths), dictionnaire (pour les langues), aucun autre document
-- Compétences évaluées : [liste]
-- Remarques : [difficultés anticipées des élèves]
+- Matériel autorisé : [liste simple]
+- Compétences évaluées : [liste simple]
+- Difficultés anticipées : [explications claires des pièges]
 
 ---
 
-CONSIGNES STRICTES :
+CONSIGNES FINALES :
 
 1. Les exercices doivent être progressifs (facile → difficile)
 2. Le barème doit être CLAIR et DÉTAILLÉ par question
-3. Les exercices doivent être ancrés dans le CONTEXTE MALIEN (noms maliens : Aminata, Boubacar, Moussa, Fatoumata, etc. ; situations locales : marché, agriculture, transport, école, famille...)
-4. Utilise un langage simple, adapté au niveau ${classe}
-5. Le sujet doit être prêt à imprimer tel quel
+3. **Utilise des NOMS MALIENS** : Aminata, Boubacar, Moussa, Fatoumata, Ibrahim, Aïssata, Modibo, Kadiatou...
+4. **Utilise des CONTEXTES MALIENS** : marché de Médina Coura, Sotrama, Bamako, le fleuve Niger, l'école, la famille, l'agriculture, la pêche...
+5. **N'utilise PAS de tableaux Markdown** (avec des | et ---). Utilise des listes à la place.
+6. Pour les réponses, utilise : ______ ou .........................
+7. **N'utilise PAS de symboles Markdown exotiques** (===, ***, etc.)
 
-⚠️ RÈGLE DE FORMATAGE TRÈS IMPORTANTE :
-6. **N'utilise JAMAIS de tableaux Markdown (avec des | et des ---).** Ils s'affichent mal dans notre application.
-   À la place, utilise des LISTES NUMÉROTÉES ou des TIRETS.
-
-7. Pour les exercices à remplir par l'élève, utilise des POINTILLÉS :
-   - ______ (pour les réponses courtes)
-   - ................................................................ (pour les phrases complètes)
-   - ☐ (pour les cases à cocher)
-
-8. Structure chaque exercice ainsi :
-   - Titre de l'exercice (avec le barème entre parenthèses)
-   - Consigne claire
-   - Liste des questions numérotées avec les points entre parenthèses
-
-9. N'utilise PAS de symboles Markdown exotiques (---, ===, etc.) — reste simple.`;
+⚠️ AVANT DE FINALISER, VÉRIFIE QUE :
+- Toutes les phrases font MOINS de 15 mots
+- Aucun mot du vocabulaire interdit n'est utilisé
+- Les noms et lieux sont bien maliens
+- Un élève de ${classe} peut tout comprendre sans dictionnaire`;
 
     const sujet = await genererAvecRetry(prompt);
 
-    // Le corrigé sera généré séparément via /api/generate-corrige
     return NextResponse.json({ sujet, corrige: "" });
   } catch (error: unknown) {
     console.error("ERREUR:", error);
