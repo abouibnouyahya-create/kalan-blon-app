@@ -16,11 +16,11 @@ export default function NouveauDevoir() {
   const [discipline, setDiscipline] = useState("Mathematiques");
   const [theme, setTheme] = useState("");
   const [duree, setDuree] = useState("");
-  const [avecCorrige, setAvecCorrige] = useState(true);
 
   const [sujet, setSujet] = useState("");
   const [corrige, setCorrige] = useState("");
   const [chargement, setChargement] = useState(false);
+  const [chargementCorrige, setChargementCorrige] = useState(false);
   const [verif, setVerif] = useState(true);
   const [modeAffichage, setModeAffichage] = useState<"sujet" | "corrige">("sujet");
 
@@ -58,18 +58,36 @@ export default function NouveauDevoir() {
           discipline,
           theme,
           duree,
-          avecCorrige,
         }),
       });
 
       const data = await reponse.json();
       setSujet(data.sujet);
-      setCorrige(data.corrige || "");
       setModeAffichage("sujet");
     } catch (e) {
       setSujet("Erreur lors de la génération.");
     }
     setChargement(false);
+  }
+
+  async function genererCorrige() {
+    if (!sujet) return;
+    setChargementCorrige(true);
+
+    try {
+      const reponse = await fetch("/api/generate-corrige", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sujet, discipline }),
+      });
+
+      const data = await reponse.json();
+      setCorrige(data.corrige || "");
+      setModeAffichage("corrige");
+    } catch (e) {
+      alert("Erreur lors de la génération du corrigé.");
+    }
+    setChargementCorrige(false);
   }
 
   async function sauvegarder() {
@@ -95,7 +113,7 @@ export default function NouveauDevoir() {
         duree,
         contenu: sujet,
         corrige,
-        avec_corrige: avecCorrige && corrige !== "",
+        avec_corrige: corrige !== "",
       },
     ]);
 
@@ -118,7 +136,7 @@ export default function NouveauDevoir() {
 
   async function telechargerWord() {
     const contenu = modeAffichage === "sujet" ? sujet : corrige;
-    const titreDoc = modeAffichage === "sujet" ? "Sujet" : "Corrigé";
+    const titreDoc = modeAffichage === "sujet" ? "Sujet" : "Corrige";
 
     const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import(
       "docx"
@@ -329,30 +347,33 @@ export default function NouveauDevoir() {
             />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={avecCorrige}
-              onChange={(e) => setAvecCorrige(e.target.checked)}
-              className="w-5 h-5"
-            />
-            <span className="font-medium">
-              Générer aussi le corrigé (recommandé)
-            </span>
-          </label>
-
           <button
             onClick={generer}
             disabled={chargement}
             className="w-full bg-[#14b53a] hover:bg-[#0f8c2c] text-white py-3 rounded-lg font-semibold text-lg transition disabled:opacity-50"
           >
-            {chargement ? "Génération en cours..." : "🎯 Générer le sujet"}
+            {chargement ? "Génération en cours…" : "🎯 Générer le sujet"}
           </button>
         </div>
 
         {sujet && (
           <>
-            {/* Onglets Ssj/Corrigé */}
+            {/* Bouton Générer le corrigé (si pas encore généré) */}
+            {!corrige && (
+              <div className="flex gap-2 mt-6 print:hidden">
+                <button
+                  onClick={genererCorrige}
+                  disabled={chargementCorrige}
+                  className="flex-1 bg-[#fcd116] text-[#3e2723] py-3 rounded-lg font-semibold hover:bg-[#e6bc00] transition disabled:opacity-50"
+                >
+                  {chargementCorrige
+                    ? "Génération du corrigé… (patientez 10-15 sec)"
+                    : "✅ Générer le corrigé"}
+                </button>
+              </div>
+            )}
+
+            {/* Onglets Sujet / Corrigé (si corrigé existe) */}
             {corrige && (
               <div className="flex gap-2 mt-6 print:hidden">
                 <button
@@ -378,10 +399,11 @@ export default function NouveauDevoir() {
               </div>
             )}
 
+            {/* Boutons d'action */}
             <div className="flex gap-2 mt-4 print:hidden flex-wrap">
               <button
                 onClick={sauvegarder}
-                className="flex-1 min-w-[150px] bg-[#fcd116] text-[#3e2723] py-3 rounded-lg font-semibold hover:bg-[#e6bc00] transition"
+                className="flex-1 min-w-[150px] bg-[#14b53a] text-white py-3 rounded-lg font-semibold hover:bg-[#0f8c2c] transition"
               >
                 💾 Sauvegarder
               </button>

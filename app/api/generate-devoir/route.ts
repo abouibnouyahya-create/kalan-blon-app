@@ -50,10 +50,8 @@ async function genererAvecRetry(prompt: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, classe, serie, discipline, theme, duree, avecCorrige } =
-      await req.json();
+    const { type, classe, serie, discipline, theme, duree } = await req.json();
 
-    // Libellés français des types
     const typeLabels: Record<string, string> = {
       devoir_maison: "Devoir à la maison",
       evaluation: "Évaluation formative",
@@ -63,7 +61,6 @@ export async function POST(req: NextRequest) {
 
     const typeLigne = typeLabels[type] || "Devoir";
 
-    // Déterminer la langue
     const disciplineLower = discipline.toLowerCase();
     let langueContenu = "français";
     let consigneLangue = "Toute la fiche doit être rédigée EN FRANÇAIS.";
@@ -80,7 +77,6 @@ Tout le reste (consignes, exercices, questions) doit être EN ANGLAIS.`;
         "Toute la fiche doit être rédigée EN ARABE, sauf l'en-tête administratif.";
     }
 
-    // Durée recommandée selon le type
     const dureeRecommandee =
       type === "evaluation"
         ? "30 minutes"
@@ -88,7 +84,6 @@ Tout le reste (consignes, exercices, questions) doit être EN ANGLAIS.`;
         ? "à faire à la maison"
         : duree || "1 heure";
 
-    // Nombre d'exercices selon le type
     const nbExercices =
       type === "evaluation"
         ? "2 à 3"
@@ -171,15 +166,6 @@ CONSIGNES STRICTES :
 ⚠️ RÈGLE DE FORMATAGE TRÈS IMPORTANTE :
 6. **N'utilise JAMAIS de tableaux Markdown (avec des | et des ---).** Ils s'affichent mal dans notre application.
    À la place, utilise des LISTES NUMÉROTÉES ou des TIRETS.
-   
-   ❌ INTERDIT :
-   | N° | Type | Avantage/Inconvénient |
-   |----|------|----------------------|
-   | 1  | Arg  | Avantage             |
-   
-   ✅ AUTORISÉ :
-   - Ligne 1 : Type ? ______ / Avantage ou Inconvénient ? ______
-   - Ligne 2 : Type ? ______ / Avantage ou Inconvénient ? ______
 
 7. Pour les exercices à remplir par l'élève, utilise des POINTILLÉS :
    - ______ (pour les réponses courtes)
@@ -195,49 +181,8 @@ CONSIGNES STRICTES :
 
     const sujet = await genererAvecRetry(prompt);
 
-    // Génération du corrigé si demandé
-    let corrige = "";
-    if (avecCorrige) {
-      await attendre(1000);
-      const promptCorrige = `Voici un sujet d'évaluation :
-
-${sujet}
-
-Génère le CORRIGÉ COMPLET de ce sujet, avec :
-- Réponses détaillées à chaque question
-- Barème appliqué question par question
-- Commentaires pédagogiques pour l'enseignant
-
-⚠️ RÈGLES :
-- N'utilise PAS de tableaux Markdown (avec des | et ---)
-- Utilise des listes numérotées ou des tirets
-- Format Markdown simple
-- Langue : ${langueContenu}
-
-Format attendu :
-# CORRIGÉ — [Titre du sujet]
-
-## EXERCICE 1 ([X] points)
-
-### Question 1 ([X] pt)
-**Réponse attendue :** ...
-**Commentaire pédagogique :** ...
-
-### Question 2 ([X] pts)
-...
-
-## EXERCICE 2 ([X] points)
-...`;
-
-      try {
-        corrige = await genererAvecRetry(promptCorrige);
-      } catch (e) {
-        corrige =
-          "Le corrigé n'a pas pu être généré. Vous pouvez le créer manuellement.";
-      }
-    }
-
-    return NextResponse.json({ sujet, corrige });
+    // Le corrigé sera généré séparément via /api/generate-corrige
+    return NextResponse.json({ sujet, corrige: "" });
   } catch (error: unknown) {
     console.error("ERREUR:", error);
     return NextResponse.json(
