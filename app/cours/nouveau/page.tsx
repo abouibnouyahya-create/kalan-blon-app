@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createClient } from "@/lib/supabase/client";
+import EcranChargement from "@/app/components/EcranChargement";
 
 export default function NouveauCours() {
   const router = useRouter();
@@ -217,13 +218,20 @@ export default function NouveauCours() {
     URL.revokeObjectURL(url);
   }
 
+  // Écran de chargement initial
   if (verif) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
-        <p className="text-[#3e2723]/60 citation-kalan text-lg">
-          Chargement…
-        </p>
-      </main>
+      <EcranChargement message="Chargement de Kalan Blon…" dureeEstimee={3} />
+    );
+  }
+
+  // Écran de chargement pendant la génération
+  if (chargement) {
+    return (
+      <EcranChargement
+        message="Génération de la fiche en cours…"
+        dureeEstimee={25}
+      />
     );
   }
 
