@@ -5,30 +5,32 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { createClient } from "@/lib/supabase/client";
 
-type Fiche = {
+type Devoir = {
   id: number;
   created_at: string;
-  theme: string;
-  discipline: string | null;
-  classe: string | null;
+  type: string;
+  classe: string;
   serie: string | null;
-  duree: string | null;
+  discipline: string;
+  theme: string;
   contenu: string;
+  corrige: string | null;
+  avec_corrige: boolean;
 };
 
-export default function DetailFiche() {
+export default function DetailDevoir() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
   const id = params.id as string;
 
-  const [fiche, setFiche] = useState<Fiche | null>(null);
+  const [devoir, setDevoir] = useState<Devoir | null>(null);
   const [chargement, setChargement] = useState(true);
-  const [modeEdition, setModeEdition] = useState(false);
-  const [contenuEdite, setContenuEdite] = useState("");
-  const [sauvegardeEnCours, setSauvegardeEnCours] = useState(false);
+  const [modeAffichage, setModeAffichage] = useState<"sujet" | "corrige">("sujet");
 
   useEffect(() => {
     async function charger() {
@@ -42,153 +44,56 @@ export default function DetailFiche() {
       }
 
       const { data, error } = await supabase
-        .from("fiches")
+        .from("devoirs")
         .select("*")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
 
       if (error || !data) {
-        alert("Fiche introuvable");
-        router.push("/cours");
+        alert("Devoir introuvable");
+        router.push("/devoirs");
         return;
       }
-      setFiche(data);
-      setContenuEdite(data.contenu);
+      setDevoir(data);
       setChargement(false);
     }
     charger();
   }, [id, router, supabase]);
 
-  async function sauvegarderEdition() {
-    if (!fiche) return;
-    setSauvegardeEnCours(true);
-
-    const { error } = await supabase
-      .from("fiches")
-      .update({ contenu: contenuEdite })
-      .eq("id", fiche.id);
-
-    if (error) {
-      alert("Erreur : " + error.message);
-    } else {
-      setFiche({ ...fiche, contenu: contenuEdite });
-      setModeEdition(false);
-      alert("Fiche mise à jour !");
-    }
-    setSauvegardeEnCours(false);
-  }
-
-  function annulerEdition() {
-    if (!fiche) return;
-    setContenuEdite(fiche.contenu);
-    setModeEdition(false);
-  }
-
   function copier() {
-    if (!fiche) return;
-    navigator.clipboard.writeText(fiche.contenu);
-    alert("Fiche copiée !");
+    if (!devoir) return;
+    const contenu = modeAffichage === "sujet" ? devoir.contenu : devoir.corrige || "";
+    navigator.clipboard.writeText(contenu);
+    alert("Copié !");
   }
 
   function imprimer() {
     window.print();
   }
 
-  async function telechargerWord() {
-    if (!fiche) return;
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import(
-      "docx"
-    );
-
-    const lignes = fiche.contenu.split("\n");
-    const paragraphes: any[] = [];
-
-    function texteEnRuns(texte: string): any[] {
-      const morceaux = texte.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-      return morceaux
-        .filter((m) => m !== "")
-        .map((m) => {
-          if (m.startsWith("**") && m.endsWith("**")) {
-            return new TextRun({ text: m.slice(2, -2), bold: true });
-          }
-          if (m.startsWith("*") && m.endsWith("*") && m.length > 2) {
-            return new TextRun({ text: m.slice(1, -1), italics: true });
-          }
-          return new TextRun({ text: m });
-        });
+  function libelleType(type: string) {
+    switch (type) {
+      case "devoir_maison": return "Devoir à la maison";
+      case "evaluation": return "Évaluation formative";
+      case "devoir_surveille": return "Devoir surveillé";
+      case "sujet_examen": return "Sujet d'examen";
+      default: return "Devoir";
     }
-
-    for (const ligne of lignes) {
-      const texte = ligne.trim();
-      if (!texte) {
-        paragraphes.push(new Paragraph({ text: "" }));
-        continue;
-      }
-      if (texte.startsWith("# ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^#\s+/, ""),
-            heading: HeadingLevel.HEADING_1,
-          })
-        );
-      } else if (texte.startsWith("## ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^##\s+/, ""),
-            heading: HeadingLevel.HEADING_2,
-          })
-        );
-      } else if (texte.startsWith("### ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^###\s+/, ""),
-            heading: HeadingLevel.HEADING_3,
-          })
-        );
-      } else if (texte.startsWith("#### ")) {
-        paragraphes.push(
-          new Paragraph({
-            text: texte.replace(/^####\s+/, ""),
-            heading: HeadingLevel.HEADING_4,
-          })
-        );
-      } else if (texte === "---") {
-        paragraphes.push(new Paragraph({ text: "" }));
-      } else if (texte.startsWith("* ") || texte.startsWith("- ")) {
-        const contenuListe = texte.replace(/^[*\-]\s+/, "");
-        paragraphes.push(
-          new Paragraph({
-            children: texteEnRuns(contenuListe),
-            bullet: { level: 0 },
-          })
-        );
-      } else {
-        paragraphes.push(new Paragraph({ children: texteEnRuns(texte) }));
-      }
-    }
-
-    const doc = new Document({ sections: [{ children: paragraphes }] });
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fiche-APC-${fiche.theme.replace(/\s+/g, "-")}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   if (chargement) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#faf6ec]">
-        <p className="text-[#3e2723]/60 citation-kalan text-lg">
-          Chargement de la fiche…
-        </p>
+        <p className="text-[#3e2723]/60 citation-kalan text-lg">Chargement…</p>
       </main>
     );
   }
 
-  if (!fiche) return null;
+  if (!devoir) return null;
+
+  const contenuAffiche =
+    modeAffichage === "sujet" ? devoir.contenu : devoir.corrige || "";
 
   return (
     <main className="min-h-screen flex relative bg-[#faf6ec]">
@@ -208,10 +113,13 @@ export default function DetailFiche() {
                 Accueil
               </Link>
               <Link href="/cours" className="font-medium hover:text-[#14b53a]">
-                Mes fiches
+                Fiches
+              </Link>
+              <Link href="/devoirs" className="font-medium text-[#14b53a]">
+                Devoirs
               </Link>
               <Link
-                href="/cours/nouveau"
+                href="/devoirs/nouveau"
                 className="bg-[#14b53a] hover:bg-[#0f8c2c] text-white px-4 py-2 rounded-lg font-medium transition"
               >
                 + Créer
@@ -223,88 +131,77 @@ export default function DetailFiche() {
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="print:hidden mb-6">
             <Link
-              href="/cours"
+              href="/devoirs"
               className="text-sm text-[#3e2723]/60 hover:text-[#3e2723]"
             >
-              ← Retour à mes fiches
+              ← Retour à mes devoirs
             </Link>
           </div>
 
           <div className="mb-8 print:mb-4">
+            <p className="text-xs uppercase tracking-widest text-[#14b53a] font-bold mb-2">
+              {libelleType(devoir.type)}
+            </p>
             <h1 className="titre-kalan text-4xl font-bold text-[#14532d] mb-2">
-              {fiche.theme}
+              {devoir.theme}
             </h1>
             <p className="text-[#3e2723]/60 text-sm">
-              {fiche.discipline} · {fiche.classe}
-              {fiche.serie && fiche.serie !== "commune"
-                ? ` (${fiche.serie})`
-                : ""}{" "}
-              · {fiche.duree} min
+              {devoir.discipline} · {devoir.classe}
+              {devoir.serie && devoir.serie !== "commune"
+                ? ` (${devoir.serie})`
+                : ""}
             </p>
           </div>
 
-          {!modeEdition && (
-            <div className="flex gap-2 mb-6 print:hidden flex-wrap">
+          {devoir.corrige && (
+            <div className="flex gap-2 mb-6 print:hidden">
               <button
-                onClick={() => setModeEdition(true)}
-                className="flex-1 min-w-[130px] bg-[#fcd116] text-[#3e2723] py-3 rounded-lg font-semibold hover:bg-[#e6bc00] transition"
+                onClick={() => setModeAffichage("sujet")}
+                className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                  modeAffichage === "sujet"
+                    ? "bg-[#14b53a] text-white"
+                    : "bg-white text-[#3e2723] border-2 border-[#3e2723]/10"
+                }`}
               >
-                ✏️ Modifier
+                📄 Sujet
               </button>
               <button
-                onClick={copier}
-                className="flex-1 min-w-[130px] bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
+                onClick={() => setModeAffichage("corrige")}
+                className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                  modeAffichage === "corrige"
+                    ? "bg-[#14b53a] text-white"
+                    : "bg-white text-[#3e2723] border-2 border-[#3e2723]/10"
+                }`}
               >
-                📋 Copier
-              </button>
-              <button
-                onClick={telechargerWord}
-                className="flex-1 min-w-[130px] bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700"
-              >
-                📄 Word
-              </button>
-              <button
-                onClick={imprimer}
-                className="flex-1 min-w-[130px] bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
-              >
-                🖨️ Imprimer
+                ✅ Corrigé
               </button>
             </div>
           )}
 
-          {modeEdition && (
-            <div className="flex gap-2 mb-6 print:hidden flex-wrap">
-              <button
-                onClick={sauvegarderEdition}
-                disabled={sauvegardeEnCours}
-                className="flex-1 min-w-[180px] bg-[#14b53a] text-white py-3 rounded-lg font-semibold hover:bg-[#0f8c2c] disabled:opacity-50"
-              >
-                {sauvegardeEnCours ? "Sauvegarde…" : "💾 Sauvegarder"}
-              </button>
-              <button
-                onClick={annulerEdition}
-                className="flex-1 min-w-[180px] bg-gray-400 text-white py-3 rounded-lg font-semibold hover:bg-gray-500"
-              >
-                ✖ Annuler
-              </button>
-            </div>
-          )}
+          <div className="flex gap-2 mb-6 print:hidden flex-wrap">
+            <button
+              onClick={copier}
+              className="flex-1 min-w-[150px] bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
+            >
+              📋 Copier
+            </button>
+            <button
+              onClick={imprimer}
+              className="flex-1 min-w-[150px] bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+            >
+              🖨️ Imprimer
+            </button>
+          </div>
 
           <div className="bg-white p-8 rounded-lg shadow print:shadow-none print:p-0">
-            {modeEdition ? (
-              <textarea
-                value={contenuEdite}
-                onChange={(e) => setContenuEdite(e.target.value)}
-                className="w-full min-h-[600px] p-4 border-2 border-[#3e2723]/10 rounded-lg font-mono text-sm focus:border-[#14b53a] focus:outline-none resize-y"
-                spellCheck="false"
-              />
-            ) : (
-              <article className="max-w-none text-gray-800 leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {fiche.contenu}
-                </ReactMarkdown>
-              </article>
-            )}
+            <article className="max-w-none text-gray-800 leading-relaxed">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {contenuAffiche}
+              </ReactMarkdown>
+            </article>
           </div>
         </div>
       </div>

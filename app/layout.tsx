@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import "katex/dist/katex.min.css";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { createClient } from "@/lib/supabase/client";
 import EcranChargement from "@/app/components/EcranChargement";
 
@@ -239,14 +241,12 @@ export default function NouveauDevoir() {
     URL.revokeObjectURL(url);
   }
 
-  // Écran de chargement initial
   if (verif) {
     return (
       <EcranChargement message="Chargement de Kalan Blon…" dureeEstimee={3} />
     );
   }
 
-  // Écran de chargement pendant la génération
   if (chargement) {
     return (
       <EcranChargement
@@ -321,142 +321,4 @@ export default function NouveauDevoir() {
                 <option value="commune">Tronc commun</option>
                 <option value="L">Littéraire (L)</option>
                 <option value="SES">Sciences Éco. et Sociales</option>
-                <option value="S">Scientifique (S)</option>
-                <option value="TLL">TLL</option>
-                <option value="TAL">TAL</option>
-                <option value="TSS">TSS</option>
-                <option value="TSEco">TSEco</option>
-                <option value="TSExp">TSExp</option>
-                <option value="TSE">TSE</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold mb-1">Discipline</label>
-              <input
-                type="text"
-                value={discipline}
-                onChange={(e) => setDiscipline(e.target.value)}
-                className="w-full border rounded p-2"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold mb-1">
-                Durée (optionnel)
-              </label>
-              <input
-                type="text"
-                value={duree}
-                onChange={(e) => setDuree(e.target.value)}
-                placeholder="Ex : 1 heure"
-                className="w-full border rounded p-2"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Thème / Chapitre</label>
-            <input
-              type="text"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              placeholder="Ex : Le présent simple en anglais"
-              className="w-full border rounded p-2"
-            />
-          </div>
-
-          <button
-            onClick={generer}
-            disabled={chargement}
-            className="w-full bg-[#14b53a] hover:bg-[#0f8c2c] text-white py-3 rounded-lg font-semibold text-lg transition disabled:opacity-50"
-          >
-            {chargement ? "Génération en cours…" : "🎯 Générer le sujet"}
-          </button>
-        </div>
-
-        {sujet && (
-          <>
-            {/* Bouton Générer le corrigé */}
-            {!corrige && (
-              <div className="flex gap-2 mt-6 print:hidden">
-                <button
-                  onClick={genererCorrige}
-                  disabled={chargementCorrige}
-                  className="flex-1 bg-[#fcd116] text-[#3e2723] py-3 rounded-lg font-semibold hover:bg-[#e6bc00] transition disabled:opacity-50"
-                >
-                  {chargementCorrige
-                    ? "Génération du corrigé…"
-                    : "✅ Générer le corrigé"}
-                </button>
-              </div>
-            )}
-
-            {/* Onglets Sujet / Corrigé */}
-            {corrige && (
-              <div className="flex gap-2 mt-6 print:hidden">
-                <button
-                  onClick={() => setModeAffichage("sujet")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                    modeAffichage === "sujet"
-                      ? "bg-[#14b53a] text-white"
-                      : "bg-white text-[#3e2723] border-2 border-[#3e2723]/10"
-                  }`}
-                >
-                  📄 Sujet
-                </button>
-                <button
-                  onClick={() => setModeAffichage("corrige")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                    modeAffichage === "corrige"
-                      ? "bg-[#14b53a] text-white"
-                      : "bg-white text-[#3e2723] border-2 border-[#3e2723]/10"
-                  }`}
-                >
-                  ✅ Corrigé
-                </button>
-              </div>
-            )}
-
-            {/* Boutons d'action */}
-            <div className="flex gap-2 mt-4 print:hidden flex-wrap">
-              <button
-                onClick={sauvegarder}
-                className="flex-1 min-w-[150px] bg-[#14b53a] text-white py-3 rounded-lg font-semibold hover:bg-[#0f8c2c] transition"
-              >
-                💾 Sauvegarder
-              </button>
-              <button
-                onClick={copier}
-                className="flex-1 min-w-[150px] bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                📋 Copier
-              </button>
-              <button
-                onClick={telechargerWord}
-                className="flex-1 min-w-[150px] bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
-              >
-                📄 Word
-              </button>
-              <button
-                onClick={imprimer}
-                className="flex-1 min-w-[150px] bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
-              >
-                🖨️ Imprimer
-              </button>
-            </div>
-
-            {/* Affichage Sujet ou Corrigé */}
-            <div className="bg-white p-8 rounded-lg shadow mt-6 print:shadow-none print:p-0">
-              <article className="max-w-none text-gray-800 leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {modeAffichage === "sujet" ? sujet : corrige}
-                </ReactMarkdown>
-              </article>
-            </div>
-          </>
-        )}
-      </div>
-    </main>
-  );
-}
+                <option value="S

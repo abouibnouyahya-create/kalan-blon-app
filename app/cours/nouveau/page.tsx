@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { createClient } from "@/lib/supabase/client";
 import EcranChargement from "@/app/components/EcranChargement";
 
@@ -218,14 +220,12 @@ export default function NouveauCours() {
     URL.revokeObjectURL(url);
   }
 
-  // Écran de chargement initial
   if (verif) {
     return (
       <EcranChargement message="Chargement de Kalan Blon…" dureeEstimee={3} />
     );
   }
 
-  // Écran de chargement pendant la génération
   if (chargement) {
     return (
       <EcranChargement
@@ -349,7 +349,10 @@ export default function NouveauCours() {
 
             <div className="bg-white p-8 rounded-lg shadow mt-6 print:shadow-none print:p-0">
               <article className="max-w-none text-gray-800 leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
                   {resultat}
                 </ReactMarkdown>
               </article>
