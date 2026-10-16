@@ -17,6 +17,11 @@ type Devoir = {
   created_at: string;
 };
 
+type Eleve = {
+  id: number;
+  created_at: string;
+};
+
 export default function Accueil() {
   const router = useRouter();
   const supabase = createClient();
@@ -25,6 +30,7 @@ export default function Accueil() {
   const [etablissement, setEtablissement] = useState<string>("");
   const [fiches, setFiches] = useState<Fiche[]>([]);
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
+  const [eleves, setEleves] = useState<Eleve[]>([]);
   const [chargementStats, setChargementStats] = useState(true);
   const [verif, setVerif] = useState(true);
   const [menuOuvert, setMenuOuvert] = useState(false);
@@ -55,8 +61,14 @@ export default function Accueil() {
         .select("id, created_at")
         .eq("user_id", user.id);
 
+      const { data: elevesData } = await supabase
+        .from("eleves")
+        .select("id, created_at")
+        .eq("user_id", user.id);
+
       setFiches(fichesData || []);
       setDevoirs(devoirsData || []);
+      setEleves(elevesData || []);
       setChargementStats(false);
       setVerif(false);
     }
@@ -70,6 +82,7 @@ export default function Accueil() {
 
   const totalFiches = fiches.length;
   const totalDevoirs = devoirs.length;
+  const totalEleves = eleves.length;
 
   const disciplinesUniques = new Set(
     fiches.map((f) => f.discipline).filter(Boolean)
@@ -99,15 +112,18 @@ export default function Accueil() {
             </Link>
 
             {/* Menu desktop */}
-            <div className="hidden md:flex items-center gap-6 text-sm">
+            <div className="hidden md:flex items-center gap-5 text-sm">
               <Link href="/accueil" className="font-medium text-[#14b53a]">
                 Accueil
               </Link>
               <Link href="/cours" className="font-medium hover:text-[#14b53a]">
-                Mes fiches
+                Fiches
               </Link>
               <Link href="/devoirs" className="font-medium hover:text-[#14b53a]">
-                Mes devoirs
+                Devoirs
+              </Link>
+              <Link href="/eleves" className="font-medium hover:text-[#14b53a]">
+                Élèves
               </Link>
               <button
                 onClick={deconnexion}
@@ -129,7 +145,7 @@ export default function Accueil() {
 
           {/* Menu mobile déroulant */}
           {menuOuvert && (
-            <div className="md:hidden border-t border-[#3e2723]/10 bg-white px-4 py-3 space-y-2">
+            <div className="md:hidden border-t border-[#3e2723]/10 bg-white px-4 py-3 space-y-1">
               <Link
                 href="/accueil"
                 onClick={() => setMenuOuvert(false)}
@@ -150,6 +166,13 @@ export default function Accueil() {
                 className="block py-2 font-medium"
               >
                 📝 Mes devoirs
+              </Link>
+              <Link
+                href="/eleves"
+                onClick={() => setMenuOuvert(false)}
+                className="block py-2 font-medium"
+              >
+                👥 Mes élèves
               </Link>
               <button
                 onClick={deconnexion}
@@ -175,41 +198,49 @@ export default function Accueil() {
           </div>
 
           {/* Statistiques */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-10 md:mb-14">
-            <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm border border-[#3e2723]/5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-10 md:mb-14">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-[#3e2723]/5">
               <div className="text-2xl md:text-3xl mb-2">📚</div>
-              <div className="text-3xl md:text-4xl font-bold text-[#14532d] mb-1">
+              <div className="text-2xl md:text-4xl font-bold text-[#14532d] mb-1">
                 {chargementStats ? "—" : totalFiches}
               </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {totalFiches > 1 ? "Fiches créées" : "Fiche créée"}
+              <div className="text-xs md:text-sm text-[#3e2723]/60">
+                {totalFiches > 1 ? "Fiches" : "Fiche"}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm border border-[#3e2723]/5">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-[#3e2723]/5">
               <div className="text-2xl md:text-3xl mb-2">📝</div>
-              <div className="text-3xl md:text-4xl font-bold text-[#14532d] mb-1">
+              <div className="text-2xl md:text-4xl font-bold text-[#14532d] mb-1">
                 {chargementStats ? "—" : totalDevoirs}
               </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {totalDevoirs > 1 ? "Devoirs créés" : "Devoir créé"}
+              <div className="text-xs md:text-sm text-[#3e2723]/60">
+                {totalDevoirs > 1 ? "Devoirs" : "Devoir"}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-5 md:p-6 shadow-sm border border-[#3e2723]/5">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-[#3e2723]/5">
+              <div className="text-2xl md:text-3xl mb-2">👥</div>
+              <div className="text-2xl md:text-4xl font-bold text-[#14532d] mb-1">
+                {chargementStats ? "—" : totalEleves}
+              </div>
+              <div className="text-xs md:text-sm text-[#3e2723]/60">
+                {totalEleves > 1 ? "Élèves" : "Élève"}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-[#3e2723]/5">
               <div className="text-2xl md:text-3xl mb-2">🏫</div>
-              <div className="text-3xl md:text-4xl font-bold text-[#14532d] mb-1">
+              <div className="text-2xl md:text-4xl font-bold text-[#14532d] mb-1">
                 {chargementStats ? "—" : disciplinesUniques}
               </div>
-              <div className="text-sm text-[#3e2723]/60">
-                {disciplinesUniques > 1
-                  ? "Disciplines couvertes"
-                  : "Discipline couverte"}
+              <div className="text-xs md:text-sm text-[#3e2723]/60">
+                {disciplinesUniques > 1 ? "Disciplines" : "Discipline"}
               </div>
             </div>
           </div>
 
-          {/* Cartes d'action — 4 cartes */}
+          {/* Cartes d'action — 5 cartes */}
           <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-10 md:mb-14">
             <Link
               href="/cours/nouveau"
@@ -234,7 +265,7 @@ export default function Accueil() {
             >
               <div className="text-3xl md:text-4xl mb-3 md:mb-4">📝</div>
               <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
-                Générer un devoir / évaluation
+                Générer un devoir
               </h2>
               <p className="text-sm md:text-base text-[#3e2723]/70">
                 Créez un devoir maison, une évaluation ou un sujet d'examen
@@ -276,6 +307,23 @@ export default function Accueil() {
               </p>
               <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Voir mes devoirs →
+              </div>
+            </Link>
+
+            <Link
+              href="/eleves"
+              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30 md:col-span-2"
+            >
+              <div className="text-3xl md:text-4xl mb-3 md:mb-4">👥</div>
+              <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
+                Mes élèves
+              </h2>
+              <p className="text-sm md:text-base text-[#3e2723]/70">
+                Suivez vos élèves, ajoutez des notes et voyez leurs moyennes
+                calculées automatiquement par matière.
+              </p>
+              <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Voir mes élèves →
               </div>
             </Link>
           </div>
