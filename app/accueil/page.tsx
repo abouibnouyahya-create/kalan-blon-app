@@ -125,6 +125,12 @@ export default function Accueil() {
               <Link href="/eleves" className="font-medium hover:text-[#14b53a]">
                 Élèves
               </Link>
+              <Link
+                href="/absences"
+                className="font-medium hover:text-[#14b53a]"
+              >
+                Absences
+              </Link>
               <button
                 onClick={deconnexion}
                 className="text-[#3e2723]/60 hover:text-[#ce1126] font-medium transition"
@@ -173,6 +179,13 @@ export default function Accueil() {
                 className="block py-2 font-medium"
               >
                 👥 Mes élèves
+              </Link>
+              <Link
+                href="/absences"
+                onClick={() => setMenuOuvert(false)}
+                className="block py-2 font-medium"
+              >
+                📋 Faire l'appel
               </Link>
               <button
                 onClick={deconnexion}
@@ -240,7 +253,7 @@ export default function Accueil() {
             </div>
           </div>
 
-          {/* Cartes d'action — 5 cartes */}
+          {/* Cartes d'action — 6 cartes */}
           <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-10 md:mb-14">
             <Link
               href="/cours/nouveau"
@@ -312,7 +325,7 @@ export default function Accueil() {
 
             <Link
               href="/eleves"
-              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30 md:col-span-2"
+              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
             >
               <div className="text-3xl md:text-4xl mb-3 md:mb-4">👥</div>
               <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
@@ -324,6 +337,23 @@ export default function Accueil() {
               </p>
               <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Voir mes élèves →
+              </div>
+            </Link>
+
+            <Link
+              href="/absences"
+              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-3xl md:text-4xl mb-3 md:mb-4">📋</div>
+              <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
+                Faire l'appel
+              </h2>
+              <p className="text-sm md:text-base text-[#3e2723]/70">
+                Enregistrez les présences, absences et retards de vos élèves en
+                quelques secondes.
+              </p>
+              <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Faire l'appel →
               </div>
             </Link>
           </div>
