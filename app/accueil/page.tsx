@@ -22,6 +22,11 @@ type Eleve = {
   created_at: string;
 };
 
+type Quiz = {
+  id: number;
+  created_at: string;
+};
+
 export default function Accueil() {
   const router = useRouter();
   const supabase = createClient();
@@ -31,6 +36,7 @@ export default function Accueil() {
   const [fiches, setFiches] = useState<Fiche[]>([]);
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [eleves, setEleves] = useState<Eleve[]>([]);
+  const [quiz, setQuiz] = useState<Quiz[]>([]);
   const [chargementStats, setChargementStats] = useState(true);
   const [verif, setVerif] = useState(true);
   const [menuOuvert, setMenuOuvert] = useState(false);
@@ -66,9 +72,15 @@ export default function Accueil() {
         .select("id, created_at")
         .eq("user_id", user.id);
 
+      const { data: quizData } = await supabase
+        .from("quiz")
+        .select("id, created_at")
+        .eq("user_id", user.id);
+
       setFiches(fichesData || []);
       setDevoirs(devoirsData || []);
       setEleves(elevesData || []);
+      setQuiz(quizData || []);
       setChargementStats(false);
       setVerif(false);
     }
@@ -83,6 +95,7 @@ export default function Accueil() {
   const totalFiches = fiches.length;
   const totalDevoirs = devoirs.length;
   const totalEleves = eleves.length;
+  const totalQuiz = quiz.length;
 
   const disciplinesUniques = new Set(
     fiches.map((f) => f.discipline).filter(Boolean)
@@ -112,7 +125,7 @@ export default function Accueil() {
             </Link>
 
             {/* Menu desktop */}
-            <div className="hidden md:flex items-center gap-5 text-sm">
+            <div className="hidden md:flex items-center gap-4 text-sm">
               <Link href="/accueil" className="font-medium text-[#14b53a]">
                 Accueil
               </Link>
@@ -130,6 +143,9 @@ export default function Accueil() {
                 className="font-medium hover:text-[#14b53a]"
               >
                 Absences
+              </Link>
+              <Link href="/quiz" className="font-medium hover:text-[#14b53a]">
+                Quiz
               </Link>
               <button
                 onClick={deconnexion}
@@ -187,6 +203,13 @@ export default function Accueil() {
               >
                 📋 Faire l'appel
               </Link>
+              <Link
+                href="/quiz"
+                onClick={() => setMenuOuvert(false)}
+                className="block py-2 font-medium"
+              >
+                🎯 Mes quiz
+              </Link>
               <button
                 onClick={deconnexion}
                 className="block w-full text-left py-2 font-medium text-[#ce1126]"
@@ -243,17 +266,17 @@ export default function Accueil() {
             </div>
 
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-[#3e2723]/5">
-              <div className="text-2xl md:text-3xl mb-2">🏫</div>
+              <div className="text-2xl md:text-3xl mb-2">🎯</div>
               <div className="text-2xl md:text-4xl font-bold text-[#14532d] mb-1">
-                {chargementStats ? "—" : disciplinesUniques}
+                {chargementStats ? "—" : totalQuiz}
               </div>
               <div className="text-xs md:text-sm text-[#3e2723]/60">
-                {disciplinesUniques > 1 ? "Disciplines" : "Discipline"}
+                {totalQuiz > 1 ? "Quiz" : "Quiz"}
               </div>
             </div>
           </div>
 
-          {/* Cartes d'action — 6 cartes */}
+          {/* Cartes d'action — 7 cartes */}
           <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-10 md:mb-14">
             <Link
               href="/cours/nouveau"
@@ -290,6 +313,23 @@ export default function Accueil() {
             </Link>
 
             <Link
+              href="/quiz/nouveau"
+              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-3xl md:text-4xl mb-3 md:mb-4">🎯</div>
+              <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
+                Générer un quiz
+              </h2>
+              <p className="text-sm md:text-base text-[#3e2723]/70">
+                Créez un quiz à choix multiples avec mode test et mode
+                révision, adapté à votre programme.
+              </p>
+              <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Créer un quiz →
+              </div>
+            </Link>
+
+            <Link
               href="/cours"
               className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
             >
@@ -320,6 +360,23 @@ export default function Accueil() {
               </p>
               <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
                 Voir mes devoirs →
+              </div>
+            </Link>
+
+            <Link
+              href="/quiz"
+              className="group bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-lg transition-all border border-[#3e2723]/5 hover:border-[#14b53a]/30"
+            >
+              <div className="text-3xl md:text-4xl mb-3 md:mb-4">🎓</div>
+              <h2 className="text-xl md:text-2xl font-bold text-[#14532d] mb-2">
+                Mes quiz
+              </h2>
+              <p className="text-sm md:text-base text-[#3e2723]/70">
+                Retrouvez tous vos quiz générés et refaites-les en mode test ou
+                révision.
+              </p>
+              <div className="mt-4 md:mt-6 text-[#14b53a] font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                Voir mes quiz →
               </div>
             </Link>
 
